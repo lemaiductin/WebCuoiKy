@@ -4,11 +4,14 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import Header from "./Header";
 import Footer from "./Footer";
+import { studentRegisterCourses } from "../api/course.api";
+import { User } from "lucide-react";
 
 const PageCourseDetail = () => {
   const navigate = useNavigate();
   const { documentId } = useParams();
   const [course, setCourse] = useState(null);
+  const [teacher, setTeacher] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -16,6 +19,17 @@ const PageCourseDetail = () => {
   const isTeacher = currentUser?.roleUser === "TEACHER";
   const isUser = !currentUser?.roleUser || currentUser?.roleUser === "USER";
   const isAdmin = currentUser?.roleUser === "ADMIN";
+
+  const fetchTeacherInfo = async (teacherId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:1337/api/users/${teacherId}`
+      );
+      setTeacher(response.data);
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin giáo viên:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchPageCourseDetails = async () => {
@@ -26,6 +40,11 @@ const PageCourseDetail = () => {
         );
         const courseData = response.data.data[0];
         setCourse(courseData);
+
+        // Fetch teacher info if teacher_id exists
+        if (courseData?.teacher_id) {
+          await fetchTeacherInfo(courseData.teacher_id);
+        }
       } catch (error) {
         console.error("Lỗi khi lấy thông tin khóa học từ API:", error);
       } finally {
@@ -49,21 +68,21 @@ const PageCourseDetail = () => {
       return;
     }
     try {
-      await axios.put(`http://localhost:1337/api/courses/${documentId}`, {
-        data: {
-          registrationStatus: {
-            ...course.registrationStatus,
-            [currentUser.id]: "pending",
-          },
-        },
-      });
+      const payload = {
+        student_id: currentUser.id,
+        teacher_id: course.teacher_id,
+        course_id: course.documentId,
+        status_id: 1,
+      };
+      const res = await studentRegisterCourses(payload);
+      console.log("sss", res);
+
       alert("Đăng ký khóa học thành công! Vui lòng chờ phê duyệt.");
     } catch (error) {
       console.error("Lỗi khi đăng ký khóa học:", error);
       alert("Không thể đăng ký khóa học. Vui lòng thử lại!");
     }
   };
-
   const faqs = [
     {
       question: "Tôi cần chuẩn bị những gì khi bắt đầu khóa học?",
@@ -455,81 +474,52 @@ const PageCourseDetail = () => {
                         transition={{ duration: 0.5 }}
                       >
                         <h2 className="text-3xl font-bold text-gray-900 mb-8">
-                          Đội ngũ giáo viên
+                          Giáo viên phụ trách
                         </h2>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          {[
-                            {
-                              name: "Thầy Minh An",
-                              level: "Giáo viên hạng 1",
-                              experience:
-                                "15 năm kinh nghiệm đào tạo lái xe, nhiệt tình, tận tâm với học viên",
-                              rating: 4.9,
-                              reviews: 128,
-                              image:
-                                "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-                            },
-                            {
-                              name: "Cô Thu Hương",
-                              level: "Giáo viên hạng 2",
-                              experience:
-                                "10 năm kinh nghiệm, phương pháp dạy dễ hiểu, phù hợp với mọi học viên",
-                              rating: 4.8,
-                              reviews: 95,
-                              image:
-                                "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-                            },
-                          ].map((instructor, index) => (
-                            <div
-                              key={index}
-                              className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300"
-                            >
-                              <div className="flex items-center mb-6">
-                                <div className="w-20 h-20 rounded-full overflow-hidden mr-6 border-4 border-red-100">
-                                  <img
-                                    src={instructor.image}
-                                    alt={instructor.name}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div>
-                                  <h3 className="text-xl font-bold text-gray-800">
-                                    {instructor.name}
-                                  </h3>
-                                  <p className="text-red-600 font-medium">
-                                    {instructor.level}
-                                  </p>
-                                </div>
+                        {teacher ? (
+                          <div className="bg-white p-8 rounded-2xl shadow-lg">
+                            <div className="flex items-center mb-6">
+                              <div className="w-20 h-20 rounded-full overflow-hidden mr-6 border-4 border-red-100 bg-red-100 flex items-center justify-center">
+                                {/* icon  */}
+                                <User className="w-10 h-10 text-red-500" />
                               </div>
-                              <p className="text-gray-700 mb-4 leading-relaxed">
-                                {instructor.experience}
-                              </p>
-                              <div className="flex items-center text-yellow-500">
-                                <div className="flex mr-2">
-                                  {[...Array(5)].map((_, i) => (
-                                    <svg
-                                      key={i}
-                                      className={`w-5 h-5 ${
-                                        i < Math.floor(instructor.rating)
-                                          ? "text-yellow-500"
-                                          : "text-gray-300"
-                                      }`}
-                                      fill="currentColor"
-                                      viewBox="0 0 20 20"
-                                    >
-                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                    </svg>
-                                  ))}
-                                </div>
-                                <span className="text-gray-600 font-medium">
-                                  {instructor.rating} ({instructor.reviews} đánh
-                                  giá)
-                                </span>
+                              <div>
+                                <h3 className="text-2xl font-bold text-gray-800">
+                                  {teacher.username}
+                                </h3>
+                                <p className="text-red-600 font-medium text-lg">
+                                  Giáo viên hướng dẫn
+                                </p>
                               </div>
                             </div>
-                          ))}
-                        </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="bg-gray-50 p-4 rounded-xl">
+                                <h4 className="font-semibold text-gray-800 mb-2">
+                                  📧 Email:
+                                </h4>
+                                <p className="text-gray-600">{teacher.email}</p>
+                              </div>
+                            </div>
+                            <div className="mt-6 p-4 bg-blue-50 rounded-xl">
+                              <p className="text-gray-700 leading-relaxed">
+                                <strong>
+                                  {teacher.fullname || teacher.username}
+                                </strong>{" "}
+                                sẽ là giáo viên hướng dẫn cho khóa học này. Giáo
+                                viên có kinh nghiệm trong việc đào tạo lái xe và
+                                sẽ đồng hành cùng bạn trong suốt quá trình học.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-white p-8 rounded-2xl shadow-lg text-center">
+                            <div className="w-16 h-16 border-4 border-gray-300 border-t-red-500 rounded-full animate-spin mx-auto mb-4"></div>
+                            <p className="text-gray-600">
+                              Đang tải thông tin giáo viên...
+                            </p>
+                          </div>
+                        )}
                       </motion.div>
                     )}
 
@@ -650,7 +640,7 @@ const PageCourseDetail = () => {
                           onClick={handleRegisterCourse}
                           className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-300 text-lg"
                         >
-                          ✅ Đăng ký ngay
+                          Đăng ký ngay
                         </motion.button>
                       )}
 
