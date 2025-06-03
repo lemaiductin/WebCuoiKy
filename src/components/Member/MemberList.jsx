@@ -18,52 +18,82 @@ const MemberList = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Lấy thông tin khóa học cụ thể theo documentId
-        const res = await axios.get(
-          `http://localhost:1337/api/courses?filters[documentId][$eq]=${documentId}&populate=*`
-        );
-
-        // Kiểm tra xem có dữ liệu trả về không
-        if (!res.data.data || res.data.data.length === 0) {
-          console.error("Không tìm thấy khóa học với ID:", documentId);
+        if (!documentId) {
+          console.error("documentId không được cung cấp!");
           return;
         }
-
-        const course = res.data.data[0];
-        console.log("Thông tin khóa học:", course);
-
-        // Lấy registrationStatus từ khóa học
-        const status = course?.registrationStatus || {};
-        console.log("Trạng thái đăng ký:", status);
 
         // Lấy danh sách tất cả users
         const userRes = await axios.get("http://localhost:1337/api/users");
         const allUsers = userRes.data;
-        console.log("Tất cả users:", allUsers);
-
-        // Lọc users đã được duyệt (cần xử lý cả dạng string và number ID)
-        const acceptedUserIds = Object.entries(status)
-          .filter(([_, value]) => value === "accepted")
-          .map(([id]) => id);
-
-        console.log("ID người dùng đã được duyệt:", acceptedUserIds);
-
-        // Lọc users phù hợp - kiểm tra cả string và number ID
-        const filteredUsers = allUsers.filter(
-          (user) =>
-            acceptedUserIds.includes(String(user.id)) ||
-            acceptedUserIds.includes(user.id)
-        );
-
-        console.log("Người dùng được lọc:", filteredUsers);
         setUsers(allUsers);
-        setMembers(filteredUsers);
+
+        // Thử tìm danh sách học viên đã được duyệt qua API student-courses
+        // (API mới sử dụng bảng riêng để quản lý đăng ký)
+        const endpoints = ["student-courses", "my-requests"];
+
+        let studentCourses = [];
+
+        for (const endpoint of endpoints) {
+          try {
+            const response = await axios.get(
+              `http://localhost:1337/api/${endpoint}?filters[course_id][$eq]=${documentId}&filters[status_id][$eq]=2&populate=*`
+            );
+
+            if (response.data?.data && response.data.data.length > 0) {
+              studentCourses = response.data.data;
+              console.log(
+                `Tìm thấy ${studentCourses.length} học viên đã được duyệt`
+              );
+              break;
+            }
+          } catch (err) {
+            // Endpoint không khả dụng, thử endpoint tiếp theo
+            continue;
+          }
+        }
+
+        if (studentCourses.length === 0) {
+          // Fallback: sử dụng phương pháp cũ với registrationStatus
+          // (dữ liệu được lưu trực tiếp trong bảng courses)
+          const courseRes = await axios.get(
+            `http://localhost:1337/api/courses?filters[documentId][$eq]=${documentId}&populate=*`
+          );
+
+          if (courseRes.data.data && courseRes.data.data.length > 0) {
+            const course = courseRes.data.data[0];
+            const status = course?.registrationStatus || {};
+
+            // Lọc ra những user có status "accepted"
+            const acceptedUserIds = Object.entries(status)
+              .filter(([_, value]) => value === "accepted")
+              .map(([id]) => id);
+
+            const filteredUsers = allUsers.filter(
+              (user) =>
+                acceptedUserIds.includes(String(user.id)) ||
+                acceptedUserIds.includes(user.id)
+            );
+
+            setMembers(filteredUsers);
+          }
+        } else {
+          // Sử dụng dữ liệu từ student-courses API (phương pháp mới)
+          const studentIds = studentCourses.map((sc) => sc.student_id);
+          const approvedStudents = allUsers.filter((user) =>
+            studentIds.includes(user.id)
+          );
+
+          setMembers(approvedStudents);
+        }
       } catch (error) {
-        console.error("Lỗi khi tải dữ liệu:", error);
+        console.error("Lỗi khi tải dữ liệu học viên:", error);
       }
     };
 
-    fetchData();
+    if (documentId) {
+      fetchData();
+    }
   }, [documentId]);
 
   // Filter members based on search term
@@ -75,24 +105,59 @@ const MemberList = () => {
 
   const handleDelete = async (userId) => {
     try {
-      // Lấy khóa học theo documentId
-      const courseRes = await axios.get(
-        `http://localhost:1337/api/courses?filters[documentId][$eq]=${documentId}&populate=*`
-      );
-      const course = courseRes.data.data[0];
+      // Thử xóa từ student-courses API trước (phương pháp mới)
+      const endpoints = ["student-courses", "my-requests"];
 
-      // Xóa user khỏi registrationStatus
-      const updatedStatus = { ...course.registrationStatus };
-      delete updatedStatus[userId];
+      let deletedFromAPI = false;
 
-      // Gọi API cập nhật khóa học
-      await axios.put(`http://localhost:1337/api/courses/${documentId}`, {
-        data: {
-          registrationStatus: updatedStatus,
-        },
-      });
+      for (const endpoint of endpoints) {
+        try {
+          // Tìm bản ghi student-course để xóa
+          const response = await axios.get(
+            `http://localhost:1337/api/${endpoint}?filters[course_id][$eq]=${documentId}&filters[student_id][$eq]=${userId}`
+          );
 
-      // Cập nhật UI
+          if (response.data?.data && response.data.data.length > 0) {
+            // Xóa tất cả bản ghi của học viên này trong khóa học
+            const deletePromises = response.data.data.map((record) =>
+              axios.delete(
+                `http://localhost:1337/api/${endpoint}/${record.documentId}`
+              )
+            );
+
+            await Promise.all(deletePromises);
+            deletedFromAPI = true;
+            break;
+          }
+        } catch (err) {
+          // Endpoint không khả dụng, thử endpoint tiếp theo
+          continue;
+        }
+      }
+
+      // Nếu không tìm thấy trong API, thử xóa từ registrationStatus (phương pháp cũ)
+      if (!deletedFromAPI) {
+        const courseRes = await axios.get(
+          `http://localhost:1337/api/courses?filters[documentId][$eq]=${documentId}&populate=*`
+        );
+
+        if (courseRes.data.data && courseRes.data.data.length > 0) {
+          const course = courseRes.data.data[0];
+          const updatedStatus = { ...course.registrationStatus };
+          delete updatedStatus[userId];
+
+          await axios.put(
+            `http://localhost:1337/api/courses/${course.documentId}`,
+            {
+              data: {
+                registrationStatus: updatedStatus,
+              },
+            }
+          );
+        }
+      }
+
+      // Cập nhật UI: loại bỏ học viên khỏi danh sách hiển thị
       setMembers(members.filter((member) => member.id !== userId));
       setShowDeleteConfirm(null);
     } catch (error) {
