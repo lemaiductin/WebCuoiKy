@@ -158,7 +158,7 @@ const Register = () => {
               {/* Username */}
               <div className="space-y-1">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Tên đăng nhập
+                  Họ và tên
                 </label>
                 <div className="relative group">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 group-focus-within:text-blue-500 transition-colors">
