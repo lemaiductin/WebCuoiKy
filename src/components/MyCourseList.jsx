@@ -19,10 +19,13 @@ import {
   List,
 } from "lucide-react";
 import Header from "./Header";
+import { getAllRequestStudentRegisterCourse } from "../api/course.api";
+import { getCoursesDetail } from "../api/auth.api";
 
 const MyCourseList = () => {
   const [courses, setCourses] = useState([]);
   const [users, setUsers] = useState([]);
+  const [studentOfCourse, setStudentOfCourse] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("grid"); // grid or list
@@ -41,28 +44,64 @@ const MyCourseList = () => {
         ]);
         setUsers(userRes.data);
         let allCourses = courseRes.data.data;
+        console.log("course-img", courseRes);
+
+        // Chỉ admin và teacher mới thấy tất cả khóa học
         if (isTeacher || isAdmin) {
           setCourses(allCourses);
-        } else if (isUser) {
-          const acceptedCourses = allCourses.filter((course) => {
-            const regStatus = course.registrationStatus || {};
-            return (
-              regStatus &&
-              (regStatus[currentUser.id] === "accepted" ||
-                regStatus[String(currentUser.id)] === "accepted")
-            );
-          });
-          setCourses(acceptedCourses);
         }
+
         setLoading(false);
       } catch (error) {
         setLoading(false);
         console.error("Lỗi khi lấy dữ liệu:", error);
       }
     };
-    fetchData();
-  }, [isTeacher, isAdmin, isUser, currentUser]);
 
+    fetchData();
+  }, []);
+  // isTeacher, isAdmin, isUser, currentUser
+
+  useEffect(() => {
+    fetchAllStudentOfCourse();
+  }, []);
+
+  const fetchCourseDetailById = async (course_documentId) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:1337/api/courses/${course_documentId}?populate=*`
+      );
+      console.log("course-documentid", res);
+      return res.data; // Trả về dữ liệu từ API
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin khóa học:", error);
+      return null;
+    }
+  };
+
+  const fetchAllStudentOfCourse = async () => {
+    try {
+      const res = await getAllRequestStudentRegisterCourse();
+      const studentOfCourse = res.data.data.filter(
+        (item) => item.student_id === currentUser.id && item.status_id === 2
+      );
+      const combinedData = await Promise.all(
+        studentOfCourse.map(async (request) => {
+          const courseData = await fetchCourseDetailById(request.course_id);
+          return {
+            request,
+            courseData,
+          };
+        })
+      );
+      setStudentOfCourse(combinedData);
+      console.log("Kết quả gộp:", combinedData);
+      return combinedData;
+    } catch (error) {
+      console.error("Lỗi khi lấy dữ liệu:", error);
+      return [];
+    }
+  };
   const getUserNameById = (userId) => {
     const user = users.find((u) => u.id === parseInt(userId));
     return user ? user.username : `ID: ${userId}`;
@@ -75,24 +114,111 @@ const MyCourseList = () => {
   const handleDeleteCourse = async (course) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa khóa học này không?")) {
       try {
-        await axios.delete(
-          `http://localhost:1337/api/courses/${course.documentId}`
-        );
-        alert("Khóa học đã được xóa thành công!");
-        setCourses(courses.filter((c) => c.documentId !== course.documentId));
+        // Thử các endpoint có thể có
+        const possibleEndpoints = ["student-courses", "my-requests"];
+
+        let requestsResponse = null;
+        let workingEndpoint = null;
+
+        for (const endpoint of possibleEndpoints) {
+          try {
+            console.log(`Thử endpoint: ${endpoint}`);
+            requestsResponse = await axios.get(
+              `http://localhost:1337/api/${endpoint}?filters[course_id][$eq]=${course.documentId}&populate=*`
+            );
+            workingEndpoint = endpoint;
+            console.log(`Endpoint ${endpoint} hoạt động!`);
+            break;
+          } catch (err) {
+            console.log(
+              `Endpoint ${endpoint} không hoạt động:`,
+              err.response?.status
+            );
+            continue;
+          }
+        }
+
+        if (requestsResponse && requestsResponse.data.data.length > 0) {
+          console.log(
+            `Tìm thấy ${requestsResponse.data.data.length} đăng ký liên quan với endpoint: ${workingEndpoint}`
+          );
+
+          // Xóa từng request một
+          for (const request of requestsResponse.data.data) {
+            try {
+              await axios.delete(
+                `http://localhost:1337/api/${workingEndpoint}/${request.documentId}`
+              );
+              console.log(`Đã xóa student-course: ${request.documentId}`);
+            } catch (deleteErr) {
+              console.error(
+                `Lỗi khi xóa student-course ${request.documentId}:`,
+                deleteErr
+              );
+            }
+          }
+        } else {
+          console.log(
+            "Không tìm thấy đăng ký liên quan hoặc không có endpoint nào hoạt động"
+          );
+        }
+
+        // Bước 2: Kiểm tra course có tồn tại không trước khi xóa
+        console.log("Kiểm tra course tồn tại...");
+        try {
+          await axios.get(
+            `http://localhost:1337/api/courses/${course.documentId}`
+          );
+          console.log("Course tồn tại, đang xóa...");
+
+          // Xóa course
+          await axios.delete(
+            `http://localhost:1337/api/courses/${course.documentId}`
+          );
+
+          alert("Khóa học và tất cả đăng ký liên quan đã được xóa thành công!");
+          setCourses(courses.filter((c) => c.documentId !== course.documentId));
+        } catch (courseErr) {
+          if (courseErr.response?.status === 404) {
+            console.log("Course đã được xóa trước đó, chỉ cập nhật UI");
+            alert("Khóa học đã được xóa!");
+            setCourses(
+              courses.filter((c) => c.documentId !== course.documentId)
+            );
+          } else {
+            throw courseErr;
+          }
+        }
       } catch (error) {
         console.error("Lỗi khi xóa khóa học:", error);
-        alert("Không thể xóa khóa học. Vui lòng thử lại!");
+        alert(
+          `Có lỗi xảy ra: ${
+            error.response?.data?.error?.message || error.message
+          }`
+        );
       }
     }
   };
 
-  // Filter courses based on search
-  const filteredCourses = courses.filter(
-    (course) =>
-      course.NameCourse?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter courses based on search - sử dụng logic khác nhau cho user và teacher/admin
+  const filteredCourses = isUser
+    ? studentOfCourse
+        .filter(
+          (item) =>
+            item.courseData?.data?.NameCourse?.toLowerCase().includes(
+              searchTerm.toLowerCase()
+            ) ||
+            item.courseData?.data?.content
+              ?.toLowerCase()
+              .includes(searchTerm.toLowerCase())
+        )
+        .map((item) => item.courseData?.data) // Lấy courseData.data từ studentOfCourse
+        .filter(Boolean) // Loại bỏ các giá trị null/undefined
+    : courses.filter(
+        (course) =>
+          course.NameCourse?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          course.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
   if (loading) {
     return (
@@ -110,7 +236,10 @@ const MyCourseList = () => {
     );
   }
 
-  if (courses.length === 0) {
+  // Kiểm tra empty state dựa trên role
+  const isEmpty = isUser ? studentOfCourse.length === 0 : courses.length === 0;
+
+  if (isEmpty) {
     return (
       <>
         <Header />
@@ -173,7 +302,7 @@ const MyCourseList = () => {
               <div className="flex justify-center items-center space-x-6">
                 <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
                   <span className="font-semibold">
-                    {courses.length} khóa học
+                    {isUser ? studentOfCourse.length : courses.length} khóa học
                   </span>
                 </div>
                 <div className="bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
@@ -262,9 +391,9 @@ const MyCourseList = () => {
                   transition={{ duration: 0.3 }}
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
                 >
-                  {filteredCourses.map((course, index) => (
+                  {filteredCourses.map((studentOfCourse, index) => (
                     <motion.div
-                      key={course.documentId}
+                      key={studentOfCourse.documentId}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -274,25 +403,29 @@ const MyCourseList = () => {
                       <div className="relative overflow-hidden h-56">
                         <img
                           src={
-                            course.img
-                              ? `http://localhost:1337${course.img[0].url}`
+                            studentOfCourse.img
+                              ? `http://localhost:1337${studentOfCourse.img[0].url}`
                               : "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=400&h=300&auto=format&fit=crop"
                           }
-                          alt={course.NameCourse || "Khóa học"}
+                          alt={studentOfCourse.NameCourse || "Khóa học"}
                           className="w-full h-full object-cover transition duration-500 group-hover:scale-110 cursor-pointer"
                           onClick={() =>
-                            navigate(`/course-details/${course.documentId}`)
+                            navigate(
+                              `/course-details/${studentOfCourse.documentId}`
+                            )
                           }
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         <div className="absolute top-4 right-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold shadow-lg">
-                          {course.license_type || "Khóa học"}
+                          {studentOfCourse.license_type || "Khóa học"}
                         </div>
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           onClick={() =>
-                            navigate(`/course-details/${course.documentId}`)
+                            navigate(
+                              `/course-details/${studentOfCourse.documentId}`
+                            )
                           }
                           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300"
                         >
@@ -305,33 +438,38 @@ const MyCourseList = () => {
                         <h3
                           className="text-xl font-bold text-gray-800 mb-3 group-hover:text-red-600 cursor-pointer transition-colors line-clamp-2"
                           onClick={() =>
-                            navigate(`/course-details/${course.documentId}`)
+                            navigate(
+                              `/course-details/${studentOfCourse.documentId}`
+                            )
                           }
                         >
-                          {course.NameCourse}
+                          {studentOfCourse.NameCourse}
                         </h3>
 
                         <div className="flex items-center mb-3 text-sm text-gray-600">
                           <GraduationCap className="w-4 h-4 mr-2" />
-                          {/* <span>
-                            Giảng viên: {getUserNameById(course.createdBy?.id)}
-                          </span> */}
+                          <span>
+                            Giảng viên:{" "}
+                            {getUserNameById(studentOfCourse.teacher_id)}
+                          </span>
                         </div>
 
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center text-red-600 font-bold">
                             <DollarSign className="w-4 h-4 mr-1" />
                             <span>
-                              {course.Tuition
+                              {studentOfCourse.Tuition
                                 ? `${new Intl.NumberFormat("vi-VN").format(
-                                    course.Tuition
+                                    studentOfCourse.Tuition
                                   )} VNĐ`
                                 : "Miễn phí"}
                             </span>
                           </div>
                           <div className="flex items-center text-sm text-gray-500">
                             <Calendar className="w-4 h-4 mr-1" />
-                            <span>{course.schedule || "Linh hoạt"}</span>
+                            <span>
+                              {studentOfCourse.schedule || "Linh hoạt"}
+                            </span>
                           </div>
                         </div>
 
@@ -342,7 +480,9 @@ const MyCourseList = () => {
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
                               onClick={() =>
-                                navigate(`/updateCourse/${course.documentId}`)
+                                navigate(
+                                  `/updateCourse/${studentOfCourse.documentId}`
+                                )
                               }
                               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all duration-300 shadow-md"
                             >
@@ -352,7 +492,9 @@ const MyCourseList = () => {
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              onClick={() => handleDeleteCourse(course)}
+                              onClick={() =>
+                                handleDeleteCourse(studentOfCourse)
+                              }
                               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -364,7 +506,9 @@ const MyCourseList = () => {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() =>
-                              navigate(`/course-details/${course.documentId}`)
+                              navigate(
+                                `/course-details/${studentOfCourse.documentId}`
+                              )
                             }
                             className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-md"
                           >
@@ -435,7 +579,7 @@ const MyCourseList = () => {
                                 <GraduationCap className="w-4 h-4 mr-2" />
                                 <span>
                                   Giảng viên:{" "}
-                                  {getUserNameById(course.createdBy?.id)}
+                                  {getUserNameById(course.teacher_id)}
                                 </span>
                               </div>
 
