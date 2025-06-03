@@ -24,7 +24,7 @@ const Courses = () => {
         const response = await axios.get(
           "http://localhost:1337/api/courses?populate=*"
         );
-        console.log("Courses data cmmm:", response.data.data);
+        console.log("Courses data :", response.data.data);
         setCourses(response.data.data);
       } catch (error) {
         console.error("Lỗi khi lấy danh sách khóa học:", error);
