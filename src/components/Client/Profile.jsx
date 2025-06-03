@@ -39,15 +39,30 @@ const Profile = () => {
   useEffect(() => {
     getUserDetail(id)
       .then((res) => {
-        setUser(res.data);
+        const userData = res.data;
+        setUser(userData);
+
+        // Tự động gán role USER nếu chưa có
+        const userRole = userData.roleUser || "USER";
+
+        // Nếu user chưa có role trong database, cập nhật luôn
+        if (!userData.roleUser) {
+          updateUser(id, { roleUser: "USER" })
+            .then(() => {
+              console.log("Đã tự động gán role USER cho user mới");
+              setUser({ ...userData, roleUser: "USER" });
+            })
+            .catch((err) => console.error("Lỗi khi cập nhật role:", err));
+        }
+
         setForm({
-          username: res.data.username || "",
-          email: res.data.email || "",
-          phone: res.data.phone || "",
-          dob: res.data.dob || "",
-          gender: res.data.gender || "",
-          address: res.data.address || "",
-          roleUser: res.data.roleUser || "USER",
+          username: userData.username || "",
+          email: userData.email || "",
+          phone: userData.phone || "",
+          dob: userData.dob || "",
+          gender: userData.gender || "",
+          address: userData.address || "",
+          roleUser: userRole,
         });
       })
       .catch((err) => console.error("Lỗi khi lấy thông tin user:", err));
@@ -260,6 +275,42 @@ const Profile = () => {
                           <span className="text-gray-800 font-medium">
                             {user.email}
                           </span>
+                        </div>
+                      )}
+                    </div>
+                    {/* ROLE */}
+                    <div className="group">
+                      <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                        <FaVenusMars className="mr-2 text-purple-500" />
+                        Role
+                      </label>
+                      {isEditing && isAdmin ? (
+                        <select
+                          name="roleUser"
+                          value={form.roleUser}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none transition-colors duration-200"
+                        >
+                          <option value="">chọn vai trò</option>
+                          <option value="ADMIN">ADMIN</option>
+                          <option value="TEACHER">TEACHER</option>
+                          <option value="USER">USER</option>
+                        </select>
+                      ) : (
+                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200">
+                          <span className="text-gray-800 font-medium">
+                            {user.roleUser || (
+                              <span className="text-gray-400 italic">
+                                Chưa chọn
+                              </span>
+                            )}
+                          </span>
+                          {isEditing && !isAdmin && (
+                            <div className="mt-2 text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded">
+                              <FaUserShield className="inline mr-1" />
+                              Chỉ admin mới có thể thay đổi vai trò
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
