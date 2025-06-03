@@ -125,15 +125,33 @@ const SubmissionList = () => {
       setIsDeleting(false);
     }
   };
+
+  // Filter submissions based on search term
+  const filteredSubmissions = studentSubmission.filter((submission) => {
+    if (!searchTerm) return true;
+
+    const fullname = submission.user.data.fullname || "";
+    const username = submission.user.data.username || "";
+    const email = submission.user.data.email || "";
+
+    return (
+      fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header and controls */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-blue-600">
-            Danh sách học đã nộp bài
+            Danh sách học viên đã nộp bài
           </h1>
-          <p className="text-gray-600">{studentSubmission?.length} học viên</p>
+          <p className="text-gray-600">
+            {filteredSubmissions?.length} học viên
+          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto mt-4 md:mt-0">
@@ -194,8 +212,8 @@ const SubmissionList = () => {
           </thead>
 
           <tbody className="bg-white divide-y divide-gray-200">
-            {studentSubmission.length > 0 ? (
-              studentSubmission.map((submission) => {
+            {filteredSubmissions.length > 0 ? (
+              filteredSubmissions.map((submission) => {
                 const userId = submission.user.data.id;
                 const gradeEntry = grades.find(
                   (grade) => grade.userId === userId
@@ -261,6 +279,23 @@ const SubmissionList = () => {
                   </tr>
                 );
               })
+            ) : searchTerm ? (
+              <tr>
+                <td
+                  colSpan={isTeacher ? "5" : "4"}
+                  className="px-6 py-4 text-center"
+                >
+                  <div className="text-gray-400 my-8">
+                    <FiSearch className="mx-auto text-4xl mb-3" />
+                    <h3 className="text-lg font-medium text-gray-600">
+                      Không tìm thấy học viên nào
+                    </h3>
+                    <p className="text-gray-500 mt-1">
+                      Không tìm thấy học viên với từ khóa "{searchTerm}"
+                    </p>
+                  </div>
+                </td>
+              </tr>
             ) : (
               <tr>
                 <td
@@ -273,7 +308,7 @@ const SubmissionList = () => {
                       Không tìm thấy bài nộp nào
                     </h3>
                     <p className="text-gray-500 mt-1">
-                      Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm
+                      Chưa có học viên nào nộp bài cho bài tập này
                     </p>
                   </div>
                 </td>
