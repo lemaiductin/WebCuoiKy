@@ -15,20 +15,22 @@ import {
   BarChart3,
   Trash2,
 } from "lucide-react";
-import Header from "./Header";
+
+import { toast } from "react-toastify";
+import Header from "../Header";
+import { getCoursesDetail, getUserDetail } from "../../api/auth.api";
+import moment from "moment";
 import {
   approveRequestStudentRegisterCourse,
   getAllRequestStudentRegisterCourse,
-} from "../api/course.api";
-import { getCoursesDetail, getUserDetail } from "../api/auth.api";
-import moment from "moment/moment";
-import { toast } from "react-toastify";
+} from "../../api/course.api";
 
-const TeacherDashboard = () => {
+const MyRequest = () => {
   const [registrations, setRegistrations] = useState([]);
   const [allRequest, setAllRequest] = useState([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const currentUser = JSON.parse(localStorage.getItem("user"));
   const isTeacher = currentUser?.roleUser === "TEACHER";
@@ -106,12 +108,13 @@ const TeacherDashboard = () => {
     }
   };
   const fetchCourseDetailById = async (course_documentId) => {
+    console.log("Course ID to fetch:", course_documentId);
     try {
       const res = await getCoursesDetail(course_documentId);
       console.log("getCoursesDetail", res);
-      return res.data.data; // hoặc res.data.data nếu API của bạn như vậy
+      return res.data.data;
     } catch (error) {
-      console.error("Lỗi khi lấy thông tin sinh viên:", error);
+      console.error("Lỗi khi lấy thông tin khóa học:", error);
       return null; // fallback an toàn
     }
   };
@@ -121,7 +124,7 @@ const TeacherDashboard = () => {
       const res = await getAllRequestStudentRegisterCourse();
 
       const allRequestOfCourse = res.data.data.filter(
-        (item) => item.teacher_id === currentUser.id
+        (item) => item.student_id === currentUser.id
       );
 
       const combinedData = await Promise.all(
@@ -145,39 +148,72 @@ const TeacherDashboard = () => {
     }
   };
 
-  const handleApprove = async (request_id) => {
-    const payload = { status_id: 2 };
+  const handleCancel = async (request_id) => {
+    const payload = { status_id: 4 };
     const res = await approveRequestStudentRegisterCourse(request_id, payload);
     if (res) {
-      toast.success("Đã chấp nhận yêu cầu!");
+      toast.success("Đã hủy!");
       fetchAllRequestStudentRegisterCourse();
     }
   };
-
-  const handleReject = async (request_id) => {
-    const payload = { status_id: 3 };
-    const res = await approveRequestStudentRegisterCourse(request_id, payload);
-    if (res) {
-      toast.success("Đã từ chối yêu cầu!");
-      fetchAllRequestStudentRegisterCourse();
-    }
-  };
-
   // Đếm số lượng request theo trạng thái
   const getRequestCountByStatus = (status_id) => {
     return allRequest.filter((r) => r.request.status_id === status_id).length;
   };
 
-  const getFilteredByStatus = () => {
-    if (!allRequest.length) return [];
-
-    if (filterStatus === "all") {
-      return allRequest;
-    }
-
-    return allRequest.filter(({ request }) => {
-      return filterStatus === request.status_id.toString();
+  // Get pending registrations for stats
+  const getPendingRegistrations = () => {
+    let pendingCount = 0;
+    registrations.forEach((course) => {
+      const registrationStatus =
+        course.registrationStatus || course?.registrationStatus;
+      if (registrationStatus) {
+        Object.values(registrationStatus).forEach((status) => {
+          if (status === "pending") pendingCount++;
+        });
+      }
     });
+    return pendingCount;
+  };
+
+  // Get total courses
+  const getTotalCourses = () => allRequest.length;
+
+  // Get filtered registrations
+  const getFilteredRegistrations = () => {
+    let filteredData = [];
+
+    registrations.forEach((course) => {
+      const registrationStatus =
+        course.registrationStatus || course?.registrationStatus;
+
+      if (!registrationStatus) return;
+
+      const courseId = course.id || course.documentId;
+      const courseName = course.NameCourse;
+
+      Object.entries(registrationStatus).forEach(([userId, status]) => {
+        if (filterStatus === "all" || status === filterStatus) {
+          const userName = getUserNameById(userId);
+          if (
+            searchTerm === "" ||
+            courseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            userName.toLowerCase().includes(searchTerm.toLowerCase())
+          ) {
+            filteredData.push({
+              courseId,
+              courseName,
+              userId,
+              userName,
+              status,
+              course,
+            });
+          }
+        }
+      });
+    });
+
+    return filteredData;
   };
 
   if (loading) {
@@ -191,7 +227,9 @@ const TeacherDashboard = () => {
     );
   }
 
-  const filteredRequests = getFilteredByStatus();
+  const filteredRegistrations = getFilteredRegistrations();
+  const pendingCount = getPendingRegistrations();
+  const totalCourses = getTotalCourses();
 
   return (
     <>
@@ -279,14 +317,24 @@ const TeacherDashboard = () => {
             </div>
           </motion.div>
 
-          {/* Filter Only */}
+          {/* Search and Filter */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="bg-white rounded-xl shadow-lg p-6 mb-8"
           >
-            <div className="flex justify-end">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên khóa học hoặc học viên..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                />
+              </div>
               <div className="relative">
                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <select
@@ -303,20 +351,20 @@ const TeacherDashboard = () => {
             </div>
           </motion.div>
 
-          {/* Registrations List */}
+          {/* Registrations List phan chinh */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            {filteredRequests.length === 0 ? (
+            {allRequest.length === 0 ? (
               <div className="bg-white rounded-xl shadow-lg p-12 text-center">
                 <div className="text-gray-400 text-6xl mb-4">📝</div>
                 <h3 className="text-2xl font-bold text-gray-600 mb-2">
                   Không có yêu cầu nào
                 </h3>
                 <p className="text-gray-500">
-                  {filterStatus !== "all"
+                  {searchTerm || filterStatus !== "all"
                     ? "Không tìm thấy yêu cầu phù hợp với bộ lọc"
                     : "Hiện tại chưa có yêu cầu đăng ký nào"}
                 </p>
@@ -324,10 +372,10 @@ const TeacherDashboard = () => {
             ) : (
               <div className="space-y-4">
                 <AnimatePresence>
-                  {filteredRequests.map((request, index) => (
+                  {allRequest.map((request, index) => (
                     <motion.div
-                      key={`${request?.request?.documentId}`}
-                      // request?.course?.id
+                      key={`${request.request.documentId}`}
+                      //  request.course?.id
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
@@ -398,23 +446,12 @@ const TeacherDashboard = () => {
                                   whileHover={{ scale: 1.05 }}
                                   whileTap={{ scale: 0.95 }}
                                   onClick={() =>
-                                    handleApprove(request.request.documentId)
-                                  }
-                                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-md"
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                  <span>Chấp thuận</span>
-                                </motion.button>
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() =>
-                                    handleReject(request.request.documentId)
+                                    handleCancel(request.request.documentId)
                                   }
                                   className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 shadow-md"
                                 >
-                                  <XCircle className="w-4 h-4" />
-                                  <span>Từ chối</span>
+                                  <Trash2 className="w-4 h-4" />
+                                  <span>Hủy bỏ</span>
                                 </motion.button>
                               </>
                             )}
@@ -435,4 +472,4 @@ const TeacherDashboard = () => {
   );
 };
 
-export default TeacherDashboard;
+export default MyRequest;
