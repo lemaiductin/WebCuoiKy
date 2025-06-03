@@ -10,6 +10,7 @@ const Header = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
+  const isStudent = user?.roleUser === "USER";
   const isAdmin = user?.roleUser === "ADMIN";
   const isTeacher = user?.roleUser === "TEACHER";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -248,6 +249,24 @@ const Header = () => {
                           >
                             <FaUserCog className="w-5 h-5 mr-3" />
                             Duyệt khóa học
+                          </button>
+                        )}
+                      </Menu.Item>
+                    )}
+
+                    {isStudent && (
+                      <Menu.Item>
+                        {({ active }) => (
+                          <button
+                            onClick={() => navigate(`/my-request/${user.id}`)}
+                            className={`${
+                              active
+                                ? "bg-green-50 text-green-600"
+                                : "text-gray-700"
+                            } flex items-center w-full px-4 py-3 text-sm font-medium transition-colors duration-200`}
+                          >
+                            <FaUserCog className="w-5 h-5 mr-3" />
+                            Yêu cầu của tôi
                           </button>
                         )}
                       </Menu.Item>

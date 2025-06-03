@@ -172,18 +172,20 @@ const ExamList = () => {
                     >
                       <FileUp className="h-5 w-5" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(e.documentId)}
-                      disabled={deletingId === e.documentId}
-                      className={`text-red-600 hover:text-red-800 transition-colors ${
-                        deletingId === e.documentId
-                          ? "opacity-50 cursor-wait"
-                          : ""
-                      }`}
-                      title="Xóa"
-                    >
-                      <FiTrash2 className="h-5 w-5" />
-                    </button>
+                    {isTeacher && (
+                      <button
+                        onClick={() => handleDelete(e.documentId)}
+                        disabled={deletingId === e.documentId}
+                        className={`text-red-600 hover:text-red-800 transition-colors ${
+                          deletingId === e.documentId
+                            ? "opacity-50 cursor-wait"
+                            : ""
+                        }`}
+                        title="Xóa"
+                      >
+                        <FiTrash2 className="h-5 w-5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -241,13 +241,15 @@ const DocumentList = () => {
                     >
                       <Repeat className="h-5 w-5" />
                     </button>
-                    <button
-                      onClick={() => handleDelete(doc.documentId)}
-                      className="text-red-600 hover:text-red-800 transition-colors"
-                      title="Xóa"
-                    >
-                      <FiTrash2 className="h-5 w-5" />
-                    </button>
+                    {isTeacher && (
+                      <button
+                        onClick={() => handleDelete(doc.documentId)}
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                        title="Xóa"
+                      >
+                        <FiTrash2 className="h-5 w-5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

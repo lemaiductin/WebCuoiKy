@@ -69,12 +69,14 @@ const Instructions = ({ exam, fetch }) => {
                       >
                         <FiDownload />
                       </button>
-                      <button
-                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full"
-                        onClick={() => handleDeleteFile(file)}
-                      >
-                        <BiTrash />
-                      </button>
+                      {isTeacher && (
+                        <button
+                          className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full"
+                          onClick={() => handleDeleteFile(file)}
+                        >
+                          <BiTrash />
+                        </button>
+                      )}
                     </div>
                   </li>
                 ))}

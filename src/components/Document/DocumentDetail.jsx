@@ -11,13 +11,16 @@ import {
 } from "react-icons/fi";
 import DeleteContentDocument from "./DeleteContentDocument";
 import AddNewContentDocument from "./AddNewContentDocument";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getDocumentDetail } from "../../api/auth.api";
 import { BiTrash } from "react-icons/bi";
 import { Menu } from "@headlessui/react";
+import Header from "../Header";
+import { FaArrowLeft } from "react-icons/fa";
 
 const DocumentDetail = () => {
   const { docId } = useParams();
+  const navigate = useNavigate();
   const [documents, setDocuments] = useState(null);
   const [showAddFileModal, setShowAddFileModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -33,7 +36,6 @@ const DocumentDetail = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
   const [paginatedFiles, setPaginatedFiles] = useState([]);
-
   useEffect(() => {
     fetchDocumentDetail();
     // eslint-disable-next-line
@@ -95,6 +97,13 @@ const DocumentDetail = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 sm:p-10 bg-white rounded-2xl shadow-xl mt-8">
       {/* Document Info */}
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors mb-6"
+      >
+        <FaArrowLeft className="w-4 h-4" />
+        <span>Quay lại trước</span>
+      </button>
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="bg-blue-100 p-4 rounded-full">
@@ -119,6 +128,7 @@ const DocumentDetail = () => {
             </div>
           </div>
         </div>
+
         {isTeacher && (
           <button
             onClick={() => setShowAddFileModal(true)}
@@ -173,13 +183,15 @@ const DocumentDetail = () => {
                       >
                         <FiDownload size={18} />
                       </button>
-                      <button
-                        className="p-2 text-red-600 hover:text-red-800 rounded-full cursor-pointer hover:bg-red-100 transition-all"
-                        onClick={() => handleDeleteFile(file)}
-                        title="Xóa"
-                      >
-                        <BiTrash size={18} />
-                      </button>
+                      {isTeacher && (
+                        <button
+                          className="p-2 text-red-600 hover:text-red-800 rounded-full cursor-pointer hover:bg-red-100 transition-all"
+                          onClick={() => handleDeleteFile(file)}
+                          title="Xóa"
+                        >
+                          <BiTrash size={18} />
+                        </button>
+                      )}
                     </div>
                   </li>
                 ))}
