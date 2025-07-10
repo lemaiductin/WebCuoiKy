@@ -64,8 +64,8 @@ const Meeting = () => {
       icon: FaMapMarkerAlt,
       title: "Địa Chỉ",
       details: [
-        "123 Đường Lê Lợi, Quận 1, TP.HCM",
-        "Chi nhánh 2: 456 Nguyễn Huệ, Quận 3",
+        "118 Đường Nguyễn Tất Thành, TP. Quy Nhơn, Bình Định",
+        " 456 Trần Hưng Đạo, TP. Quy Nhơn",
       ],
       color: "from-red-500 to-pink-500",
     },
@@ -78,7 +78,7 @@ const Meeting = () => {
     {
       icon: FaEnvelope,
       title: "Email",
-      details: ["info@daotaolaixe.com", "support@daotaolaixe.com"],
+      details: ["TrungLuong@daotaolaixe.com", "maiThanhY@daotaolaixe.com"],
       color: "from-green-500 to-emerald-500",
     },
     {
@@ -107,7 +107,7 @@ const Meeting = () => {
     {
       icon: HiOutlineLocationMarker,
       title: "Địa điểm thuận lợi",
-      desc: "Gần trung tâm thành phố",
+      desc: "Gần trung tâm TP. Quy Nhơn",
     },
   ];
 
@@ -279,7 +279,7 @@ const Meeting = () => {
                     Vị Trí Trung Tâm
                   </h2>
                   <p className="text-blue-100 mt-1">
-                    Tìm đường đến trung tâm đào tạo
+                    Tìm đường đến trung tâm đào tạo tại Trung Lương Quy Nhơn
                   </p>
                 </div>
                 <HiOutlineLocationMarker className="text-4xl text-white" />
@@ -287,7 +287,7 @@ const Meeting = () => {
             </div>
             <div className="p-4 h-96">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.126365377763!2d106.69982631526072!3d10.80182646171297!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317528ca99339b29%3A0xa10097f196f43f19!2zMjM1IEhvw6BuZyBWxINuLCBQaMaw4budbmcgMTIsIFF14bqtbiAxLCBUaMOgbmggcGjhu5EgSOG7kyBDaMOtIE1pbmgsIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1620000000000!5m2!1svi!2s"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d61349.62133397406!2d109.19769355820312!3d13.77538!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x316f6c65736eabd9%3A0x1c06e5adad498b55!2zUXV5IE5oxqFuLCBCw6xuaCDEkOG7i25oLCBWaeG7h3QgTmFt!5e0!3m2!1svi!2s!4v1686123456789!5m2!1svi!2s"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

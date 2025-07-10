@@ -1,19 +1,19 @@
-import axios from "axios";
+import axios from "../utils/useAxios";
 
 export const gradeStudent = (payload) => {
-  return axios.post("http://localhost:1337/api/grades", {
+  return axios.post("grades", {
     data: payload,
   });
 };
 
 export const getAllGrade = () => {
-  return axios.get("http://localhost:1337/api/grades");
+  return axios.get("grades");
 };
 
 export const getGradeFollowStudent = (id) => {
-  return axios.get(`http://localhost:1337/api/grades/${id}`);
+  return axios.get(`grades/${id}`);
 };
 
 export const deleteGrade = (id) => {
-  return axios.delete(`http://localhost:1337/api/grades/${id}`);
+  return axios.delete(`grades/${id}`);
 };

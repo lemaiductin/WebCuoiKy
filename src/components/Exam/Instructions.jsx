@@ -22,7 +22,7 @@ const Instructions = ({ exam, fetch }) => {
   return (
     <>
       <div>
-        <h2 className="text-xl font-semibold mb-4">Mô tả bài tập</h2>
+        <h2 className="text-xl font-semibold mb-4">Mô tả bài tập </h2>
         <p className="text-gray-700 whitespace-pre-line">
           {exam?.description || "Không có mô tả cụ thể."}
         </p>

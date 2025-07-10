@@ -8,7 +8,7 @@ const HeroSection = () => {
         <div className="flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 mb-10 md:mb-0">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Trở thành tài xế lành nghề cùng DriveAcademy
+              Trở thành tài xế lành nghề
             </h1>
             <p className="text-xl mb-8">
               Trung tâm đào tạo lái xe uy tín hàng đầu với đội ngũ giảng viên

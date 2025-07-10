@@ -1,6 +1,8 @@
+import axios from "../utils/useAxios";
+
 export const getPageCourse = () => {
-  return axios.get("http://localhost:1337/api/courses?populate=*");
+  return axios.get("courses?populate=*");
 };
 export const getPageCoursesDetail = (documentId) => {
-  return axios.get(`http://localhost:1337/api/courses/${documentId}`);
+  return axios.get(`courses/${documentId}`);
 };

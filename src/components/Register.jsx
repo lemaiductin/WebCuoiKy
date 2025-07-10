@@ -91,7 +91,7 @@ const Register = () => {
           navigate("/login");
         }
       } catch (error) {
-        alert("Tên đăng nhập hoặc email đã tồn tại!");
+        alert("Sai tài khoản hoặc email đã tồn tại!");
       } finally {
         setIsLoading(false);
       }

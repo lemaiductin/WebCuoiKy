@@ -37,6 +37,7 @@ const Login = () => {
       try {
         const userData = { identifier: email, password };
         const res = await loginUser(userData);
+        console.log("Login response:", res);
         if (res.status === 200) {
           alert("Đăng nhập thành công");
           localStorage.setItem("token", res.data.jwt);
@@ -47,6 +48,7 @@ const Login = () => {
         if (error.response && error.response.status === 400) {
           alert("Email hoặc mật khẩu không đúng!");
         } else {
+          console.error("Login error:", error);
           alert("Đã xảy ra lỗi. Vui lòng thử lại sau!");
         }
       } finally {
@@ -132,7 +134,7 @@ const Login = () => {
                 </div>
                 {errors.email && (
                   <p className="text-sm text-red-600 flex items-center mt-1">
-                    <span className="mr-1">⚠️</span>
+                    <span className="mr-1"></span>
                     {errors.email}
                   </p>
                 )}
@@ -173,7 +175,7 @@ const Login = () => {
                 </div>
                 {errors.password && (
                   <p className="text-sm text-red-600 flex items-center mt-1">
-                    <span className="mr-1">⚠️</span>
+                    <span className="mr-1"></span>
                     {errors.password}
                   </p>
                 )}

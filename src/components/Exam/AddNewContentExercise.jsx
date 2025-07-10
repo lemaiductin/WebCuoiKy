@@ -11,7 +11,7 @@ const AddNewContentExercise = ({ onClose, fetch }) => {
   const [error, setError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [toast, setToast] = useState(null);
-
+  // sinh vien nop bai
   const handleSubmit = async () => {
     if (selectedFiles.length === 0) {
       setError("Vui lòng chọn ít nhất một tệp");
