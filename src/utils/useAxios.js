@@ -4,7 +4,7 @@ const baseURL = import.meta.env.VITE_API_SERVICE;
 // Set config defaults when creating the instance
 const instance = axios.create({
   baseURL: baseURL,
-  timeout: 10000,
+  timeout: 100000,
   withCredentials: true,
 });
 instance.defaults.withCredentials = true;
