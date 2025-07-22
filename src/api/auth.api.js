@@ -6,6 +6,11 @@ export const registerUser = (userData) => {
 export const changePassword = (userData) => {
   return axios.post("auth/change-password", userData);
 };
+
+// currentPassword,
+//         password: newPassword,
+//         passwordConfirmation: confirmPassword,
+
 export const loginUser = (userData) => {
   return axios.post("auth/local", userData);
 };
@@ -13,11 +18,20 @@ export const loginUser = (userData) => {
 // export const getUserList = (userData) => {
 //   return axios.get("users", userData);
 // };
-export const getUserList = (page = 1, pageSize = 1) => {
+export const getUserList = (page = 1, pageSize = 10000) => {
   return axios.get(
     `users?pagination[page]=${page}&pagination[pageSize]=${pageSize}`
   );
 };
+export const getAllUsers = () => {
+  return axios.get("users");
+};
+
+// dòng 43 MyCourseList.jsx
+export const getCourseList = () => {
+  return axios.get("courses?populate=*");
+};
+
 export const deleteUser = (id) => {
   return axios.delete(`users/${id}`);
 };
@@ -46,6 +60,26 @@ export const updateCourse = (id, data) => {
 export const createCourse = (data) => {
   return axios.post("courses", data);
 };
+export const uploadCourse = (formData) => {
+  return axios.post("upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+export const createCourseWithImage = (form, imageId) => {
+  return axios.post("courses", {
+    data: {
+      ...form,
+      img: imageId,
+    },
+  });
+};
+
+export const getCoursesByDocumentId = (documentId) => {
+  return axios.get(`courses?filters[documentId][$eq]=${documentId}&populate=*`);
+};
+
 // documents
 export const getDocuments = () => {
   return axios.get("documents");

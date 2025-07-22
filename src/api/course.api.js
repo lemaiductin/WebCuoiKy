@@ -15,3 +15,9 @@ export const approveRequestStudentRegisterCourse = (id, data) => {
 export const deleteReqCourse = (id) => {
   return axios.delete(`student-courses/${id}`);
 };
+
+export const getCoursesDetail = (documentId) => {
+  return axios.get(
+    `/courses?filters[documentId][$eq]=${documentId}&populate=*`
+  );
+};

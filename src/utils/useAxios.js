@@ -12,11 +12,17 @@ instance.defaults.withCredentials = true;
 // Add a request interceptori
 instance.interceptors.request.use(
   function (config) {
-    // Do something before request is sent
+    // Lấy token từ localStorage hoặc sessionStorage
+    const token = localStorage.getItem("token"); // Hoặc sessionStorage.getItem("token")
+
+    // Nếu có token thì thêm vào header Authorization
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     return config;
   },
   function (error) {
-    // Do something with request error
     return Promise.reject(error);
   }
 );
