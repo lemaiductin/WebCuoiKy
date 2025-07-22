@@ -14,6 +14,7 @@ import {
   FaSave,
   FaCar,
 } from "react-icons/fa";
+import { createCourseWithImage, uploadCourse } from "../api/auth.api";
 
 const CreateCourse = () => {
   const navigate = useNavigate();
@@ -48,20 +49,12 @@ const CreateCourse = () => {
         const formData = new FormData();
         formData.append("files", imageFile);
 
-        const uploadResponse = await axios.post(
-          "http://localhost:1337/api/upload",
-          formData
-        );
+        const uploadResponse = await uploadCourse(formData);
         imageId = uploadResponse.data[0].id; // Lấy URL ảnh sau khi upload
       }
 
       // Gửi dữ liệu khóa học cùng URL ảnh
-      const response = await axios.post("http://localhost:1337/api/courses", {
-        data: {
-          ...form,
-          img: imageId,
-        },
-      });
+      const response = await createCourseWithImage(form, imageId);
       console.log("sdfsf :", form, user.id);
       console.log("Khóa học đã được tạo:", response);
       alert("Khóa học đã được tạo thành công!");

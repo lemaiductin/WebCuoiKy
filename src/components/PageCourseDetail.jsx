@@ -6,6 +6,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import { studentRegisterCourses } from "../api/course.api";
 import { User } from "lucide-react";
+import { getUserDetail } from "../api/auth.api";
 
 const PageCourseDetail = () => {
   const navigate = useNavigate();
@@ -22,9 +23,7 @@ const PageCourseDetail = () => {
 
   const fetchTeacherInfo = async (teacherId) => {
     try {
-      const response = await axios.get(
-        `http://localhost:1337/api/users/${teacherId}`
-      );
+      const response = await getUserDetail(teacherId);
       setTeacher(response.data);
     } catch (error) {
       console.error("Lỗi khi lấy thông tin giáo viên:", error);
@@ -35,9 +34,7 @@ const PageCourseDetail = () => {
     const fetchPageCourseDetails = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get(
-          `http://localhost:1337/api/courses?filters[documentId][$eq]=${documentId}&populate=*`
-        );
+        const response = await getCoursesByDocumentId(documentId);
         const courseData = response.data.data[0];
         setCourse(courseData);
 

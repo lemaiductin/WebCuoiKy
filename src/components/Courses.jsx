@@ -5,6 +5,7 @@ import axios from "axios";
 import Header from "./Header";
 import Footer from "./Footer";
 import { User } from "lucide-react";
+import { getPageCourse } from "../api/page-detail.api";
 
 const Courses = () => {
   const [courses, setCourses] = useState([]);
@@ -21,9 +22,7 @@ const Courses = () => {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          "http://localhost:1337/api/courses?populate=*"
-        );
+        const response = await getPageCourse();
         console.log("Courses data :", response.data.data);
         setCourses(response.data.data);
       } catch (error) {

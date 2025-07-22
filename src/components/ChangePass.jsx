@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 import Header from "./Header";
 import { useNavigate } from "react-router-dom";
+import { changePassword } from "../api/auth.api";
 
 const ChangePassword = () => {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -28,6 +29,12 @@ const ChangePassword = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+
+  const userData = {
+    currentPassword,
+    password: newPassword,
+    passwordConfirmation: confirmPassword,
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -66,19 +73,8 @@ const ChangePassword = () => {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        "http://localhost:1337/api/auth/change-password",
-        {
-          currentPassword,
-          password: newPassword,
-          passwordConfirmation: confirmPassword,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const changePass = await changePassword(userData);
+      console.log("Change:", changePass);
       setMessage("Đổi mật khẩu thành công!");
       setMessageType("success");
       setCurrentPassword("");

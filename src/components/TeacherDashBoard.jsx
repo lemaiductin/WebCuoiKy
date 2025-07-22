@@ -20,7 +20,12 @@ import {
   approveRequestStudentRegisterCourse,
   getAllRequestStudentRegisterCourse,
 } from "../api/course.api";
-import { getCoursesDetail, getUserDetail } from "../api/auth.api";
+import {
+  getAllUsers,
+  getCourseList,
+  getCoursesDetail,
+  getUserDetail,
+} from "../api/auth.api";
 import moment from "moment/moment";
 import { toast } from "react-toastify";
 
@@ -37,7 +42,7 @@ const TeacherDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get("http://localhost:1337/api/users");
+      const response = await getAllUsers();
       setUsers(response.data);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách người dùng:", error);
@@ -51,9 +56,7 @@ const TeacherDashboard = () => {
 
   const fetchRegistrations = async () => {
     try {
-      const response = await axios.get(
-        "http://localhost:1337/api/courses?populate=*"
-      );
+      const response = await getCourseList();
 
       console.log("Current user ID:", currentUser.id);
 

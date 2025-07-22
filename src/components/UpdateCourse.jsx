@@ -17,6 +17,7 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 import Toast from "./common/Toast";
+import { getCoursesByDocumentId, uploadCourse } from "../api/auth.api";
 
 const UpdateCourse = () => {
   const { documentId } = useParams();
@@ -40,9 +41,7 @@ const UpdateCourse = () => {
     const fetchCourse = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          `http://localhost:1337/api/courses?filters[documentId][$eq]=${documentId}&populate=*`
-        );
+        const response = await getCoursesByDocumentId(documentId);
         const courseData = response.data.data[0];
         if (courseData) {
           setForm({
@@ -92,10 +91,7 @@ const UpdateCourse = () => {
         const formData = new FormData();
         formData.append("files", imageFile);
 
-        const uploadResponse = await axios.post(
-          "http://localhost:1337/api/upload",
-          formData
-        );
+        const uploadResponse = await uploadCourse(formData);
         imageId = uploadResponse.data[0].id; // Lấy ID của ảnh sau khi upload
       }
 

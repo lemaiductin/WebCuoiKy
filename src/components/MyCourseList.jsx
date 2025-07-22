@@ -20,7 +20,12 @@ import {
 } from "lucide-react";
 import Header from "./Header";
 import { getAllRequestStudentRegisterCourse } from "../api/course.api";
-import { getCoursesDetail } from "../api/auth.api";
+import {
+  deleteCourse,
+  getCourseList,
+  getCoursesDetail,
+  getUserList,
+} from "../api/auth.api";
 
 const MyCourseList = () => {
   const [courses, setCourses] = useState([]);
@@ -39,8 +44,8 @@ const MyCourseList = () => {
     const fetchData = async () => {
       try {
         const [userRes, courseRes] = await Promise.all([
-          axios.get("http://localhost:1337/api/users"),
-          axios.get("http://localhost:1337/api/courses?populate=*"),
+          getUserList(),
+          getCourseList(),
         ]);
         setUsers(userRes.data);
         let allCourses = courseRes.data.data;
@@ -68,9 +73,7 @@ const MyCourseList = () => {
 
   const fetchCourseDetailById = async (course_documentId) => {
     try {
-      const res = await axios.get(
-        `http://localhost:1337/api/courses/${course_documentId}?populate=*`
-      );
+      const res = await getCoursesDetail(course_documentId);
       console.log("course-documentid", res);
       return res.data; // Trả về dữ liệu từ API
     } catch (error) {
@@ -166,16 +169,11 @@ const MyCourseList = () => {
         // Bước 2: Kiểm tra course có tồn tại không trước khi xóa
         console.log("Kiểm tra course tồn tại...");
         try {
-          await axios.get(
-            `http://localhost:1337/api/courses/${course.documentId}`
-          );
+          await getCoursesDetail(course.documentId);
           console.log("Course tồn tại, đang xóa...");
 
           // Xóa course
-          await axios.delete(
-            `http://localhost:1337/api/courses/${course.documentId}`
-          );
-
+          await deleteCourse(course.documentId);
           alert("Khóa học và tất cả đăng ký liên quan đã được xóa thành công!");
           setCourses(courses.filter((c) => c.documentId !== course.documentId));
         } catch (courseErr) {

@@ -25,6 +25,8 @@ import {
   FaEnvelope,
   FaCar,
 } from "react-icons/fa";
+import { getCoursesDetail } from "../api/course.api";
+import { getUserList } from "../api/auth.api";
 
 const CourseDetails = () => {
   const navigate = useNavigate();
@@ -45,18 +47,14 @@ const CourseDetails = () => {
         console.log("documentId từ URL:", documentId);
 
         // Fetch course details
-        const response = await axios.get(
-          `http://localhost:1337/api/courses?filters[documentId][$eq]=${documentId}&populate=*`
-        );
+        const response = await getCoursesDetail(documentId);
         const courseData = response.data.data[0];
         setCourse(courseData);
 
         // Fetch teacher information if teacher_id exists
         if (courseData?.teacher_id) {
           try {
-            const usersResponse = await axios.get(
-              "http://localhost:1337/api/users"
-            );
+            const usersResponse = await getUserList();
             const teacherData = usersResponse.data.find(
               (user) => user.id === courseData.teacher_id
             );
